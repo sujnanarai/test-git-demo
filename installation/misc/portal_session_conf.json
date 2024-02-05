@@ -1,0 +1,1 @@
+{"cookie_name": "manager-session", "secret": "this_is_my_other_secret", "storage": "kong", "cookie_secure": true, "cookie_lifetime": 3600, "cookie_same_site": "None"}

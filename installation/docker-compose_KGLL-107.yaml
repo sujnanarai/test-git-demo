@@ -1,0 +1,119 @@
+version: "3"
+networks:
+  kong-edu-net:
+    name: kong-edu-net
+    driver: bridge
+services:
+  postgres:
+    image: postgres:13.1
+    restart: always
+    container_name: postgres
+    hostname: postgres
+    environment:
+    - POSTGRES_USER=kong
+    - POSTGRES_DB=kong
+    - POSTGRES_PASSWORD=kong
+    ports:
+    - 5432:5432
+    networks:
+    - kong-edu-net
+  kong-bootstrap:
+    image: kong/kong-gateway:3.2.2.0
+    container_name: kong-bootstrap
+    depends_on:
+    - postgres
+    restart: on-failure
+    command: "kong migrations bootstrap"
+    environment:
+    - KONG_DATABASE=postgres
+    - KONG_PG_HOST=postgres
+    - KONG_PG_PASSWORD=kong
+    - KONG_PASSWORD=admin
+    networks:
+    - kong-edu-net
+  # kong-load-config:
+  #   image: kong/kong-gateway:3.2.2.0
+  #   container_name: kong-load-config
+  #   depends_on:
+  #   - kong-bootstrap
+  #   restart: on-failure
+  #   command: "kong config db_import /usr/local/kong/loopback.yaml"
+  #   environment:
+  #   - KONG_DATABASE=postgres
+  #   - KONG_PG_HOST=postgres
+  #   - KONG_PG_PASSWORD=kong
+  #   - KONG_PASSWORD=admin
+  #   volumes:
+  #   - ${PWD}/loopback.yaml:/usr/local/kong/loopback.yaml
+  #   networks:
+  #   - kong-edu-net
+  kong-ee:
+    image: kong/kong-gateway:3.2.2.0
+    container_name: kong-ee
+    hostname: kong-ee
+    depends_on:
+    - postgres
+    - kong-bootstrap
+    # - kong-load-config
+    restart: always
+    volumes:
+    - /usr/local/kong/logs:/srv/shared/logs
+    - /etc/kong/ssl:/srv/shared/ssl
+    - /etc/kong/license.json:/etc/kong/license.json
+    - /etc/kong/nginx/nginx-kong.conf:/usr/local/kong/nginx-kong.conf
+    - /etc/kong/nginx/nginx-kong-gui-include.conf:/usr/local/kong/nginx-kong-gui-include.conf
+    ports:
+    - 8000:8000
+    - 8001:8001
+    - 8002:8002
+    - 8003:8003
+    - 8004:8004
+    - 8005:8005
+    - 8006:8006
+    - 8443:8443
+    - 8444:8444
+    - 8445:8445
+    - 8446:8446
+    - 8447:8447
+    - 8100:8100
+    command: "kong start"
+    environment:
+    - KONG_DATABASE=postgres
+    - KONG_PG_HOST=postgres
+    - KONG_PG_PASSWORD=kong
+    - KONG_PROXY_ACCESS_LOG=/dev/stdout
+    - KONG_ADMIN_ACCESS_LOG=/dev/stdout
+    - KONG_PROXY_ERROR_LOG=/dev/stderr
+    - KONG_ADMIN_ERROR_LOG=/dev/stderr
+    - KONG_ADMIN_LISTEN=127.0.0.1:8001, 127.0.0.1:8444 ssl
+    - KONG_ADMIN_GUI_URL=${KONG_ADMIN_GUI_URL}
+    #  - KONG_ADMIN_GUI_URL=http://localhost:8002
+    - KONG_VITALS=off
+    - KONG_STATUS_LISTEN=0.0.0.0:8100
+    - KONG_PASSWORD=admin
+    - KONG_PORTAL_GUI_LISTEN="0.0.0.0:8003, 0.0.0.0:8446 http2 ssl"
+    - KONG_PORTAL_API_LISTEN="0.0.0.0:8004, 0.0.0.0:8447 http2 ssl"
+    - KONG_PORTAL_API_ACCESS_LOG=/srv/shared/logs/portalapi_access.log
+    - KONG_PORTAL_API_ERROR_LOG=/srv/shared/logs/portalapi_error.log
+    - KONG_PORTAL_GUI_ACCESS_LOG=/srv/shared/logs/portalgui_access.log
+    - KONG_PORTAL_GUI_ERROR_LOG=/srv/shared/logs/portalgui_error.log
+    - KONG_PORTAL="on"
+    - KONG_PORTAL_GUI_PROTOCOL="https"
+    - KONG_PORTAL_GUI_HOST=${KONG_PORTAL_GUI_HOST}
+    - KONG_PORTAL_GUI_SSL_CERT_KEY="/srv/shared/ssl/server.key"
+    - KONG_PORTAL_GUI_SSL_CERT="/srv/shared/ssl/server.crt"
+    - KONG_PORTAL_API_URL=${KONG_PORTAL_API_URL}
+    - KONG_PORTAL_API_SSL_CERT_KEY="/srv/shared/ssl/server.key"
+    - KONG_PORTAL_API_SSL_CERT="/srv/shared/ssl/server.crt"
+    # - KONG_PORTAL_AUTH="basic-auth"
+    # - KONG_PORTAL_SESSION_CONF="{"cookie_name": "manager-session", "secret": "this_is_my_other_secret", "storage": "kong", "cookie_secure": true, "cookie_lifetime": 3600, "cookie_same_site": "None"}"
+    # - KONG_PORTAL_AUTO_APPROVE: true
+    - KONG_PORTAL_EMAIL_VERIFICATION="off"
+    - KONG_PORTAL_EMAILS_FROM="kongtest@gmail.com"
+    - KONG_PORTAL_EMAILS_REPLY_TO="kongtest@gmail.com"
+
+    #- KONG_ENFORCE_RBAC=on
+    #- KONG_ADMIN_GUI_AUTH=basic-auth
+    #- KONG_ADMIN_GUI_SESSION_CONF={"secret":"kong", "cookie_name":"kong_cookie", "cookie_secure":false}
+    networks:
+    - kong-edu-net

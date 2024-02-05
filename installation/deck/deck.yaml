@@ -1,0 +1,8 @@
+# From here https://github.com/Kong/deck/blob/main/examples/deck.yml
+
+# kong-addr: http://localhost:8001
+kong-addr: https://ynypc5taqu6jbnuom-63dd1a86fac45963a7528973.labs.strigo.io:8444
+headers:
+- "key1:value1"
+no-color: false
+verbose: 0
